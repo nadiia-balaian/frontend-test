@@ -10,10 +10,17 @@
 }
 
 .wrapper {
-  max-width: 70vw;
+  width: 70vw;
   margin: 0 auto;
 }
 
 .post-reaction {
   font-size: 1rem;
+}
+
+.element-wrapper {
+  border: 1px solid #e8e8e8;
+  border-radius: 5px;
+  padding: 1rem;
+  width: 200px;
 }

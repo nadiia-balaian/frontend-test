@@ -1,73 +1,139 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import './App.css';
-import { Card, Space, Flex, message } from 'antd';
-import { Comment } from './interfaces';
-import { reactions } from './constants';
-import { NewComment } from './components/NewComment';
-import { Reactor } from './components/Reactor';
+import { message, Button, Input, Flex } from 'antd';
+import { CloseOutlined, CommentOutlined } from '@ant-design/icons';
+import { Comment, NewCommentElement } from './interfaces';
 import { CommentSection } from './components/CommentSection';
 
-// TODO: add multiple reactions
-// TODO: store comments in local storage or in a database
-
 function App() {
-  const [postReaction, setPostReaction] = useState<string>('');
-  const [newComment, setNewComment] = useState<string>('');
+  const [values, setValues] = useState({});
+  const [elementsData, setElementsData] = useState<NewCommentElement[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
+  const containerRef = useRef(null);
+  const [isCommenting, setIsCommenting] = useState<boolean>(false);
 
-  const getReactionByKey = (key: string) => {
-    return reactions.find((reaction) => reaction.key === key);
-  };
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      const containerBox = containerRef.current.getBoundingClientRect();
+      const x = e.clientX - containerBox.left + window.scrollX;
+      const y = e.clientY - containerBox.top + window.scrollY;
+      setIsCommenting(true);
 
-  const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNewComment(e.target.value);
-  };
+      const newId = `element-${elementsData.length}`;
 
-  const saveComment = () => {
+      setElementsData((prevElements) => [...prevElements, { id: newId, x, y, isOpen: true }]);
+      setValues((prevValues) => ({
+        ...prevValues,
+        [newId]: '',
+      }));
+    },
+    [elementsData.length]
+  );
+
+  const saveComment = (id: string) => {
+    setIsCommenting(false);
+    toggleElementVisibility(id, false);
     setComments([
       ...comments,
       {
         id: Math.random().toString(),
-        content: newComment,
-        author: 'John Doe', // TODO: take from auth
+        elementId: id,
+        content: values[id],
+        author: 'John Doe',
       },
     ]);
-    setNewComment('');
     messageApi.open({
       type: 'success',
       content: 'Comment saved!',
     });
   };
 
+  const handleChange = useCallback((id: string, newValue: string) => {
+    setValues((prevValues) => ({
+      ...prevValues,
+      [id]: newValue,
+    }));
+  }, []);
+
+  const toggleElementVisibility = useCallback(
+    (id: string, isOpen: boolean) => {
+      const elementIndex = elementsData.findIndex((element) => element.id === id);
+      const elementToClose = elementsData.find((element) => element.id === id);
+      if (elementToClose) {
+        setElementsData([
+          ...elementsData.slice(0, elementIndex),
+          {
+            ...elementToClose,
+            isOpen,
+          },
+          ...elementsData.slice(elementIndex + 1),
+        ]);
+      }
+    },
+    [elementsData]
+  );
+
+  const onClose = useCallback(
+    (id: string) => {
+      setIsCommenting(false);
+      toggleElementVisibility(id, false);
+      const elementHasComment = comments.find((comment) => comment.elementId === id);
+      if (!elementHasComment) {
+        setElementsData((prevElements) => prevElements.filter((element) => element.id !== id));
+      }
+    },
+    [toggleElementVisibility, comments]
+  );
+
   return (
     <div className="wrapper">
-      {contextHolder}
-      <Space direction="vertical" size={16}>
-        <Card title="Post" bordered>
-          <div className="text">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque at lacus nec erat semper molestie. Praesent
-            ac fermentum neque. Ut mollis sed dui eu ornare. Integer iaculis erat at metus facilisis sagittis. Morbi
-            rutrum justo lacus, id tempus orci lobortis ut. Duis dictum felis velit, ut volutpat est accumsan vitae.
-            Phasellus ut dolor tristique risus luctus commodo eget gravida lorem. Fusce vitae venenatis sem, eget
-            eleifend est. Donec vulputate diam eget vehicula cursus. Ut tempus molestie urna non sodales. Integer
-            commodo sapien nisl. Ut vel quam rutrum lacus aliquet luctus. Curabitur venenatis non quam vitae pharetra.
-            Integer egestas sollicitudin eleifend. Vivamus sed maximus velit. Aliquam dapibus tempor nisi nec malesuada.
+      <div
+        ref={containerRef}
+        style={{
+          width: '100%',
+          height: '300px',
+          border: '1px solid darkgray',
+          marginBottom: '20px',
+          position: 'relative',
+        }}
+        onClick={isCommenting ? undefined : handleClick}
+      >
+        {elementsData.map(({ id, x, y, isOpen }) => (
+          <div key={id} style={{ position: 'absolute', left: `${x}px`, top: `${y}px` }}>
+            {isOpen ? (
+              <Flex vertical className="element-wrapper" gap={8}>
+                <CloseOutlined onClick={() => onClose(id)} />
+                <Input
+                  type="text"
+                  value={values[id] || ''}
+                  maxLength={100}
+                  onChange={(e) => handleChange(id, e.target.value)}
+                  placeholder="Type here..."
+                  id={id}
+                />
+                <Flex gap={4} justify="space-between">
+                  <Button onClick={() => onClose(id)}>Cancel</Button>
+                  <Button type="primary" onClick={() => saveComment(id)} disabled={!values[id]}>
+                    Save
+                  </Button>
+                </Flex>
+              </Flex>
+            ) : (
+              <CommentOutlined
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleElementVisibility(id, true);
+                }}
+              />
+            )}
           </div>
+        ))}
+      </div>
+      {contextHolder}
 
-          <Flex gap={8} justify={postReaction ? 'space-between' : 'end'} align="center">
-            {postReaction && <div className="post-reaction">{getReactionByKey(postReaction)?.node}</div>}
-
-            <Flex gap={8}>
-              <NewComment value={newComment} onChange={onChange} saveComment={saveComment} />
-              <Reactor onSelect={(key) => setPostReaction(key)} removeReaction={() => setPostReaction('')} />
-            </Flex>
-          </Flex>
-
-        </Card>
-        <CommentSection comments={comments} />
-      </Space>
+      <CommentSection comments={comments} />
     </div>
   );
 }

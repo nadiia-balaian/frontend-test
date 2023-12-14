@@ -1,30 +1,54 @@
-# React + TypeScript + Vite
+# Comment and reactions 
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project was bootstrapped with [Vite](https://vitejs.dev/).
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- nodejs ^18
+- yarn ^1.22.17
 
-## Expanding the ESLint configuration
+## Getting Started 🚀
+Set up your local development environment by following these steps:
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+1.  **Install packages.**
 
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+```bash
+npm install
+# or
+yarn install
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+2.  **Start the development server.**
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+The live development website should now appear at [http://localhost:5174/](http://localhost:5174/)
+
+
+## Available Scripts
+
+In the project directory, you can run:
+
+### `yarn dev`
+
+Runs the app in the development mode.<br />
+Open [http://localhost:5173/](http://localhost:5173/) to view it in the browser.
+
+The page will reload if you make edits.<br />
+You will also see any lint errors in the console.
+
+### `yarn type-check` and `yarn lint`
+
+Run linters against staged git files and type cheking.
+
+### `yarn build`
+
+Builds the app for production to the `build` folder.<br />
+It correctly bundles React in production mode and optimizes the build for the best performance.
+
+The build is minified and the filenames include the hashes.<br />
+Your app is ready to be deployed!

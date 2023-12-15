@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import './App.css';
 import { message, Button, Input, Flex } from 'antd';
@@ -14,11 +14,35 @@ function App() {
   const containerRef = useRef(null);
   const [isCommenting, setIsCommenting] = useState<boolean>(false);
 
+  const itemRefs = useRef([]);
+
+  useEffect(() => {
+    const calculatePosition = () => {
+      if (containerRef.current) {
+        const containerBox = containerRef.current.getBoundingClientRect();
+        const elementsDataUpdated = elementsData.map((element, index) => {
+          const elementBox = itemRefs.current[index].getBoundingClientRect();
+          const x = ((elementBox.left - containerBox.left) / containerBox.width) * 100 + '%';
+          const y = ((elementBox.top - containerBox.top) / containerBox.height) * 100 + '%';
+          return {
+            ...element,
+            x: x,
+            y: y,
+          };
+        });
+        setElementsData(elementsDataUpdated);
+      }
+    };
+
+    window.addEventListener('resize', calculatePosition);
+    return () => window.removeEventListener('resize', calculatePosition);
+  }, [elementsData]);
+
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       const containerBox = containerRef.current.getBoundingClientRect();
-      const x = e.clientX - containerBox.left + window.scrollX;
-      const y = e.clientY - containerBox.top + window.scrollY;
+      const x = e.clientX - containerBox.left + window.scrollX + 'px';
+      const y = e.clientY - containerBox.top + window.scrollY + 'px';
       setIsCommenting(true);
 
       const newId = `element-${elementsData.length}`;
@@ -100,8 +124,12 @@ function App() {
         }}
         onClick={isCommenting ? undefined : handleClick}
       >
-        {elementsData.map(({ id, x, y, isOpen }) => (
-          <div key={id} style={{ position: 'absolute', left: `${x}px`, top: `${y}px` }}>
+        {elementsData.map(({ id, x, y, isOpen }, index) => (
+          <div
+            ref={(el) => (itemRefs.current[index] = el)}
+            key={id}
+            style={{ position: 'absolute', left: `${x}`, top: `${y}` }}
+          >
             {isOpen ? (
               <Flex vertical className="element-wrapper" gap={8}>
                 <CloseOutlined onClick={() => onClose(id)} />

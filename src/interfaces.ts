@@ -13,7 +13,7 @@ export interface Comment {
 
 export interface NewCommentElement {
   id: string;
-  x: number;
-  y: number;
+  x: string;
+  y: string;
   isOpen: boolean;
 }

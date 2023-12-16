@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import './App.css';
-import { message, Button, Input, Flex } from 'antd';
-import { CloseOutlined, CommentOutlined } from '@ant-design/icons';
-import { Comment, NewCommentElement } from './interfaces';
-import { CommentSection } from './components/CommentSection';
+import { message } from 'antd';
+import { Comment, CommentElement } from './interfaces';
+import { AddCommentComponent } from './components/AddCommentComponent';
 
 function App() {
-  const [values, setValues] = useState({});
-  const [elementsData, setElementsData] = useState<NewCommentElement[]>([]);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [elementsData, setElementsData] = useState<CommentElement[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
   const containerRef = useRef(null);
   const [isCommenting, setIsCommenting] = useState<boolean>(false);
@@ -44,42 +41,59 @@ function App() {
       const x = e.clientX - containerBox.left + window.scrollX + 'px';
       const y = e.clientY - containerBox.top + window.scrollY + 'px';
       setIsCommenting(true);
-
       const newId = `element-${elementsData.length}`;
-
-      setElementsData((prevElements) => [...prevElements, { id: newId, x, y, isOpen: true }]);
-      setValues((prevValues) => ({
-        ...prevValues,
-        [newId]: '',
-      }));
+      setElementsData((prevElements) => [...prevElements, { id: newId, x, y, comment: {} as Comment, isOpen: true }]);
     },
     [elementsData.length]
   );
 
-  const saveComment = (id: string) => {
+  const saveComment = (id: string, text: string) => {
     setIsCommenting(false);
-    toggleElementVisibility(id, false);
-    setComments([
-      ...comments,
-      {
-        id: Math.random().toString(),
-        elementId: id,
-        content: values[id],
-        author: 'John Doe',
-      },
-    ]);
+    const elementIndex = elementsData.findIndex((element) => element.id === id);
+    const elementToUpdate = elementsData.find((element) => element.id === id);
+
+    if (elementToUpdate) {
+      let updatedElement: CommentElement;
+      if (elementToUpdate.comment.content) {
+        updatedElement = {
+          ...elementToUpdate,
+          comment: {
+            ...elementToUpdate.comment,
+            replies: [
+              ...elementToUpdate.comment.replies,
+              {
+                id: Math.random().toString(),
+                elementId: id,
+                content: text,
+                replies: [],
+              },
+            ],
+          },
+        };
+      } else {
+        updatedElement = {
+          ...elementToUpdate,
+          comment: {
+            id: Math.random().toString(),
+            elementId: id,
+            content: text,
+            replies: [],
+          },
+        };
+      }
+      setElementsData([
+        ...elementsData.slice(0, elementIndex),
+        {
+          ...updatedElement,
+        },
+        ...elementsData.slice(elementIndex + 1),
+      ]);
+    }
     messageApi.open({
       type: 'success',
       content: 'Comment saved!',
     });
   };
-
-  const handleChange = useCallback((id: string, newValue: string) => {
-    setValues((prevValues) => ({
-      ...prevValues,
-      [id]: newValue,
-    }));
-  }, []);
 
   const toggleElementVisibility = useCallback(
     (id: string, isOpen: boolean) => {
@@ -103,13 +117,19 @@ function App() {
     (id: string) => {
       setIsCommenting(false);
       toggleElementVisibility(id, false);
-      const elementHasComment = comments.find((comment) => comment.elementId === id);
-      if (!elementHasComment) {
+      const element = elementsData.find((element) => element.id === id);
+      if (element && !element.comment.content) {
         setElementsData((prevElements) => prevElements.filter((element) => element.id !== id));
       }
     },
-    [toggleElementVisibility, comments]
+    [toggleElementVisibility, elementsData]
   );
+
+  const addReaction = useCallback((key: string, id: string) => {
+    setElementsData((prevElements) =>
+      prevElements.map((element) => (element.id === id ? { ...element, reaction: key } : element))
+    );
+  }, []);
 
   return (
     <div className="wrapper">
@@ -128,40 +148,22 @@ function App() {
           <div
             ref={(el) => (itemRefs.current[index] = el)}
             key={id}
-            style={{ position: 'absolute', left: `${x}`, top: `${y}` }}
+            style={{ position: 'absolute', left: `${x}`, top: `${y}`, zIndex: index + 1 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {isOpen ? (
-              <Flex vertical className="element-wrapper" gap={8}>
-                <CloseOutlined onClick={() => onClose(id)} />
-                <Input
-                  type="text"
-                  value={values[id] || ''}
-                  maxLength={100}
-                  onChange={(e) => handleChange(id, e.target.value)}
-                  placeholder="Type here..."
-                  id={id}
-                />
-                <Flex gap={4} justify="space-between">
-                  <Button onClick={() => onClose(id)}>Cancel</Button>
-                  <Button type="primary" onClick={() => saveComment(id)} disabled={!values[id]}>
-                    Save
-                  </Button>
-                </Flex>
-              </Flex>
-            ) : (
-              <CommentOutlined
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleElementVisibility(id, true);
-                }}
-              />
-            )}
+            <AddCommentComponent
+              id={id}
+              isOpen={isOpen}
+              onClose={onClose}
+              saveComment={saveComment}
+              elementData={elementsData[index]}
+              toggleElementVisibility={toggleElementVisibility}
+              onAddReaction={addReaction}
+            />
           </div>
         ))}
       </div>
       {contextHolder}
-
-      <CommentSection comments={comments} />
     </div>
   );
 }

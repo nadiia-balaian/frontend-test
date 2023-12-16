@@ -7,13 +7,15 @@ export interface Reaction {
 export interface Comment {
   id: string;
   content: string;
-  author: string;
   elementId: string;
+  replies: Comment[];
 }
 
-export interface NewCommentElement {
+export interface CommentElement {
   id: string;
   x: string;
   y: string;
   isOpen: boolean;
+  comment: Comment;
+  reaction?: string;
 }

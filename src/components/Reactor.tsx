@@ -5,19 +5,26 @@ import { DeleteOutlined } from '@ant-design/icons';
 
 interface ReactorProps {
   onSelect: (key: string) => void;
-  removeReaction: () => void;
+  removeReaction?: () => void;
+  selected?: string;
 }
 
-export const Reactor = ({ onSelect, removeReaction }: ReactorProps) => {
+const getReactionByKey = (key: string) => {
+  return reactions.filter((reaction) => reaction.key === key)[0].node;
+};
+
+export const Reactor = ({ onSelect, selected, removeReaction }: ReactorProps) => {
   const content = (
     <Flex gap={8}>
       <ReactionBarSelector iconSize={20} onSelect={onSelect} reactions={reactions} />
-      <DeleteOutlined onClick={removeReaction} title="Remove reaction" />
+      {removeReaction && <DeleteOutlined onClick={removeReaction} title="Remove reaction" />}
     </Flex>
   );
   return (
     <Popover content={content} title="Choose your reaction" trigger="click">
-      <Button title="Left reaction!">🙂</Button>
+      <Button className="reaction-btn" title="Left reaction!">
+        {selected ? <span>{getReactionByKey(selected)}</span> : <span>🙂</span>}
+      </Button>
     </Popover>
   );
 };
